@@ -3,60 +3,79 @@ package bot
 import (
 	"fmt"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	log "github.com/sirupsen/logrus"
 	"sfacg/core"
 	"strings"
 )
 
 var sf core.SFAPI
 
-func init()  {
-	go sfTrack()
+func init() {
+	zero.RegisterPlugin(&sfacg{})  //注册插件
+	go sfTrack() //启动监控线程
+}
 
-	zero.OnFullMatch("查看登录").Handle(func(ctx *zero.Ctx) {
-		ctx.Send(sf.GetCookie())
-	})
+type sfacg struct{}
 
-	zero.OnCommand("更改登录").Handle(func(ctx *zero.Ctx) {
-		sf.SetCookie(ctx.State["args"].(string))
-		ctx.Send("本地Cookie更新成功")
-	})
+func (_ *sfacg) GetPluginInfo() zero.PluginInfo {
+        return zero.PluginInfo{
+                Author:     "夜不语",
+                PluginName: "SF报更",
+                Version:    "1.1.0",
+                Details:    "SF报更插件，Go语言版",
+        }
+}
 
-	zero.OnCommand("查找书号").Handle(func(ctx *zero.Ctx) {
-		var info core.NovelInfo
-		bookid := sf.FindBookID(ctx.State["args"].(string))
-		info.Init(bookid)
-		ctx.Send(fmt.Sprintf(
+func (_ *sfacg) Start() { // 插件主体
+        zero.OnNotice().Handle(func(matcher *zero.Matcher, event zero.Event, state zero.State) zero.Response {
+			if event.NoticeType == "group_increase"{
+                zero.Send(event, fmt.Sprintf("[CQ:at,qq=%d]欢迎新人",event.UserID))
+        }
+        return zero.FinishResponse
+		})  //欢迎新人
+		
+        zero.OnCommand("测试小说").Handle(func(matcher *zero.Matcher, event zero.Event, state zero.State) zero.Response {
+			var info core.NovelInfo
+			info.Init(state["args"].(string))
+			xmlText := info.MakeXmlCord()
+			jsonText,_ := info.MakeJsonCord()
+			zero.Send(event,xmlText)
+			zero.Send(event,jsonText)
+			return zero.FinishResponse
+		})
+        
+        zero.OnCommand("查找书号").Handle(func(matcher *zero.Matcher, event zero.Event, state zero.State) zero.Response {
+			var info core.NovelInfo
+			bookid := sf.FindBookID(state["args"].(string))
+			info.Init(bookid)
+			zero.Send(event,fmt.Sprintf(
 			"书名: %s\n书号: %s\n作者: %s\n更新时间: %s",
 			info.Name,info.Id,info.NewChapter.Writer,info.Time))
-	})
+			return zero.FinishResponse
+		})
+        
+        zero.OnFullMatch("查看登录").Handle(func(matcher *zero.Matcher, event zero.Event, state zero.State) zero.Response {
+			zero.Send(event,sf.GetCookie())
+			return zero.FinishResponse
+		})
 
-	zero.OnCommand("测试小说").Handle(func(ctx *zero.Ctx) {
-		var info core.NovelInfo
-		info.Init(ctx.State["args"].(string))
-		xmlText := info.MakeXmlCord()
-		jsonText,_ := info.MakeJsonCord()
-		ctx.Send(xmlText)
-		ctx.Send(jsonText)
-	})
+        zero.OnCommand("更改登录").Handle(func(matcher *zero.Matcher, event zero.Event, state zero.State) zero.Response {
+			sf.SetCookie(state["args"].(string))
+			zero.Send(event,"本地Cookie更新成功")
+        	return zero.FinishResponse
+		})
 }
 
 func sfTrack()  {
 	var info core.NovelInfo
-	var bot *zero.Ctx
 	var groupId int64
 	var xmlText,jsonText,cmtText,record string
 	config := core.LoadConfig()
 
-	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
-		bot = ctx
-		log.Println("===================================================================")
-		log.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
-		log.Println("* Project: https://github.com/DawnNights/sfacgTrack")
-		log.Println("* Config: Read",len(config),"novels with local configuration")
-		log.Println("===================================================================")
-		return false
-	})
+	fmt.Println("\n===================================================================")
+	fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
+	fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
+	fmt.Println("* Config: Read",len(config),"novels with local configuration")
+	fmt.Println("===================================================================\n")
 
 	for {
 		for idx, _ := range config {
@@ -67,8 +86,8 @@ func sfTrack()  {
 				jsonText, cmtText = info.MakeJsonCord()
 
 				for _, groupId = range config[idx].GroupId{
-					bot.SendGroupMessage(groupId,xmlText)
-					bot.SendGroupMessage(groupId,jsonText)
+					zero.SendGroupMessage(groupId,xmlText)
+					zero.SendGroupMessage(groupId,jsonText)
 				}
 
 				if config[idx].IsSend {
@@ -80,7 +99,7 @@ func sfTrack()  {
 				record = fmt.Sprintf(
 					"小说书名: %s\n%s最新章节: %s\n评论状态: ",
 					info.Name,cmtText[0:strings.Index(cmtText,"本章评分")],info.NewChapter.Title)
-				bot.SendGroupMessage(522245324,record)
+				zero.SendGroupMessage(522245324,record)
 			}
 		}
 	}
