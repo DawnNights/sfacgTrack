@@ -9,7 +9,7 @@ func LoadConfig() TrackConfig {
 	var sf SFAPI
 	var config TrackConfig
 
-	yaml.Unmarshal(FileRead("resource\\Config.yaml"),&config)
+	yaml.Unmarshal(FileRead("resource/Config.yaml"),&config)
 	for idx, _ := range config {
 		config[idx].RecordUrl = sf.FindChapterUrl(config[idx].BookId)
 	}

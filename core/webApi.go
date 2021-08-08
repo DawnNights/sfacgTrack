@@ -18,11 +18,11 @@ func strmid(pre string,suf string,str string) string {
 }
 
 func (sf *SFAPI) SetCookie(cookie string) {
-	FileWrite("resource\\Cookie.txt",[]byte(cookie))
+	FileWrite("resource/Cookie.txt",[]byte(cookie))
 }
 
 func (sf *SFAPI) GetCookie() string {
-	return string(FileRead("resource\\Cookie.txt"))
+	return string(FileRead("resource/Cookie.txt"))
 }
 
 func (sf *SFAPI) Comment(bookid string, content string) string {
