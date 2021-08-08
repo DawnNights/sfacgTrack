@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	log "github.com/sirupsen/logrus"
 	"sfacg/core"
 	"strings"
 )
@@ -49,11 +50,11 @@ func sfTrack()  {
 
 	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
 		bot = ctx
-		fmt.Println("\n===================================================================")
-		fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
-		fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
-		fmt.Println("* Config: Read",len(config),"novels with local configuration")
-		fmt.Println("===================================================================\n")
+		log.Println("===================================================================")
+		log.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
+		log.Println("* Project: https://github.com/DawnNights/sfacgTrack")
+		log.Println("* Config: Read",len(config),"novels with local configuration")
+		log.Println("===================================================================")
 		return false
 	})
 
