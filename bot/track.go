@@ -42,16 +42,20 @@ func init()  {
 
 func sfTrack()  {
 	var info core.NovelInfo
-	var ctx *zero.Ctx
+	var bot *zero.Ctx
 	var groupId int64
 	var xmlText,jsonText,cmtText,record string
 	config := core.LoadConfig()
 
-	fmt.Println("\n===================================================================")
-	fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
-	fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
-	fmt.Println("* Config: Read",len(config),"novels with local configuration")
-	fmt.Println("===================================================================\n")
+	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
+		bot = ctx
+		fmt.Println("\n===================================================================")
+		fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
+		fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
+		fmt.Println("* Config: Read",len(config),"novels with local configuration")
+		fmt.Println("===================================================================\n")
+		return false
+	})
 
 	for {
 		for idx, _ := range config {
@@ -64,17 +68,17 @@ func sfTrack()  {
 
 
 				for _, groupId = range config[idx].GroupId{
-					ctx.SendGroupMessage(groupId,xmlText)
-					ctx.SendGroupMessage(groupId,jsonText)
+					bot.SendGroupMessage(groupId,xmlText)
+					bot.SendGroupMessage(groupId,jsonText)
 				}
 
-				/*if config[idx].IsSend {
+				if config[idx].IsSend {
 					record = record + sf.Comment(config[idx].BookId,cmtText)
 				}else {
 					record = record + "禁止评论"
-				}*/
+				}
 
-				ctx.SendGroupMessage(578562889,record)
+				bot.SendGroupMessage(578562889,record)
 			}
 		}
 	}
