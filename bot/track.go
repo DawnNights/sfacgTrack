@@ -75,6 +75,7 @@ func sfTrack()  {
 	fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
 	fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
 	fmt.Println("* Config: Read",len(config),"novels with local configuration")
+	config.Print()
 	fmt.Println("===================================================================\n")
 
 	for {
