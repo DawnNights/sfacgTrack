@@ -64,8 +64,6 @@ func sfTrack()  {
 				config[idx].RecordUrl = info.NewChapter.Url
 				xmlText = info.MakeXmlCord()
 				jsonText, cmtText = info.MakeJsonCord()
-				record = cmtText[0:strings.Index(cmtText,"本章评分")] + "评论状态: "
-
 
 				for _, groupId = range config[idx].GroupId{
 					bot.SendGroupMessage(groupId,xmlText)
@@ -78,7 +76,10 @@ func sfTrack()  {
 					record = record + "禁止评论"
 				}
 
-				bot.SendGroupMessage(578562889,record)
+				record = fmt.Sprintf(
+					"小说书名: %s\n%s最新章节: %s\n评论状态: ",
+					info.Name,cmtText[0:strings.Index(cmtText,"本章评分")],info.NewChapter.Title)
+				bot.SendGroupMessage(522245324,record)
 			}
 		}
 	}

@@ -63,7 +63,7 @@ func (sf *SFAPI) FindChapterUrl(bookid string) string {
 	result := string(body)
 	result = strmid("<h3 class=\"chapter-title\">","</h3>",result)
 	result = strmid("<a href=\"","\" class=",result)
-	return "https://book.sfacg.com/" + result
+	return "https://book.sfacg.com" + result
 }
 
 func (sf *SFAPI) FindBookID(keyword string) string {
