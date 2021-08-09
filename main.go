@@ -1,20 +1,25 @@
 package main
 import (
-        "github.com/wdvxdr1123/ZeroBot"
-        _ "sfacg/bot"
+	_ "sfacg/bot"
+	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/driver"
 )
 
 
 func main() {
+	zero.Run(zero.Config{
+		NickName:      []string{"报更姬"},
+		CommandPrefix: "",
+		SuperUsers: []string{"2224825532", "1990899322"},
 
-        zero.Run(zero.Option{
-                Host:          "127.0.0.1", // cqhttp的ip地址
-                Port:          "6700", // cqhttp的端口
-                AccessToken:   "",
-                NickName:      []string{"机器人"},
-                CommandPrefix: "", //指令前缀
-                SuperUsers:    []string{"2224825532"},
-        })
-        select {}
+		Driver: []zero.Driver{
+			&driver.WSClient{
+				// OneBot 正向WS 默认使用 6700 端口
+				Url:         "ws://127.0.0.1:6700",
+				AccessToken: "",
+			},
+		},
+	})
 
+	select {}
 }

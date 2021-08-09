@@ -43,6 +43,7 @@ type (
 	TrackConfig []struct {
 		BookId string	// 报更小说书号
 		IsSend bool	// 是否需要发送至评论区
+		WriterId int64
 		GroupId []int64	// 需要发送的群号
 		RecordUrl string	// 当前更新网址记录
 	}

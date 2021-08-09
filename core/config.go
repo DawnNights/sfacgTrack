@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v2"
 )
 
@@ -15,10 +14,4 @@ func LoadConfig() TrackConfig {
 	}
 
 	return config
-}
-
-func (config TrackConfig) Print() {
-	for idx, elem := range config {
-		fmt.Println("*",idx+1,elem.BookId,elem.RecordUrl)
-	}
 }
