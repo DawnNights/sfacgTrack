@@ -101,10 +101,12 @@ func sfTrack()  {
 					ctx.SendGroupMessage(groupId,jsonText)
 				}else {
 					var msg message.Message = []message.MessageSegment{
+						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, "小说更新啦~"),
 						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, xmlText),
 						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, jsonText),
 					}
 					ctx.SendGroupForwardMessage(groupId, msg)
+					ctx.SendGroupMessage(groupId,fmt.Sprintf("小说《%s》更新啦，请注意查收~",info.Name))
 				}
 			}
 
