@@ -2,121 +2,140 @@ package bot
 
 import (
 	"fmt"
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 	"sfacg/core"
 	"strings"
+	"time"
+
+	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-var sf core.SFAPI
-var IsNormal bool = true
+var api core.SFAPI
+var mode int
 
 func init() {
-
-	zero.OnFullMatch("切换报更模式").Handle(func(ctx *zero.Ctx) {
-		IsNormal = !IsNormal
-		if IsNormal{
-			ctx.Send("已切换为普通卡片模式")
-		}else {
-			ctx.Send("已切换为合并转发模式")
-		}
-	})
+	go sfacgTrack()
 
 	zero.On("notice/group_increase").Handle(func(ctx *zero.Ctx) {
-		ctx.Send(fmt.Sprintf("[CQ:at,qq=%d]欢迎新人",ctx.Event.UserID))
+		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("欢迎新人"))
 	})
 
-	zero.OnCommand("测试小说").Handle(func(ctx *zero.Ctx) {
-		var info core.NovelInfo
-		info.Init(ctx.State["args"].(string))
-
-		xmlText := info.MakeXmlCord()
-		jsonText,_ := info.MakeJsonCord()
-
-		if IsNormal{
-			ctx.Send(xmlText)
-			ctx.Send(jsonText)
-		}else {
-			var msg message.Message = []message.MessageSegment{
-				message.CustomNode("测试人员", ctx.Event.SelfID, xmlText),
-				message.CustomNode("测试人员", ctx.Event.SelfID, jsonText),
-			}
-			ctx.SendGroupForwardMessage(ctx.Event.GroupID,msg)
-
+	zero.OnFullMatch("切换报更模式").Handle(func(ctx *zero.Ctx) {
+		switch mode {
+		case 0:
+			mode = 1
+			ctx.Send("已切换为合并转发模式")
+		case 1:
+			mode = 0
+			ctx.Send("已切换为普通报更模式")
 		}
-	})
-
-	zero.OnCommand("查找书号").Handle(func(ctx *zero.Ctx) {
-		var info core.NovelInfo
-		info.Init(sf.FindBookID(ctx.State["args"].(string)))
-
-		ctx.Send(fmt.Sprintf(
-			"书名: %s\n书号: %s\n作者: %s\n更新时间: %s",
-			info.Name,info.Id,info.NewChapter.Writer,info.Time))
 	})
 
 	zero.OnFullMatch("查看登录").Handle(func(ctx *zero.Ctx) {
-		ctx.Send(sf.GetCookie())
+		ctx.Send(api.GetCookie())
 	})
 
 	zero.OnCommand("更改登录").Handle(func(ctx *zero.Ctx) {
-		sf.SetCookie(ctx.State["args"].(string))
-		ctx.Send("本地Cookie更新成功")
+		api.SetCookie(ctx.State["args"].(string))
 	})
 
-	go sfTrack()
+	zero.OnCommand("查找书号").Handle(func(ctx *zero.Ctx) {
+		var novel core.Novel
+		novel.Init(api.FindBookID(ctx.State["args"].(string)))
+
+		var content = "书名: " + novel.Name +
+			"\n书号: " + novel.Id +
+			"\n作者: " + novel.Writer +
+			"\n更新: " + novel.NewChapter.Time.Format("2006年01月02日 15时04分05秒")
+
+		ctx.Send(content)
+	})
+
+	zero.OnCommand("测试小说").Handle(func(ctx *zero.Ctx) {
+		var novel core.Novel
+		novel.Init(ctx.State["args"].(string))
+
+		img := "file:///" + novel.MakeImage()
+		code, _ := novel.MakeJson()
+
+		switch mode {
+		case 0:
+			ctx.SendChain(message.Image(img))
+			ctx.SendChain(message.JSON(code))
+		case 1:
+			code = strings.ReplaceAll(code, ",", "&#44;")
+			code = strings.ReplaceAll(code, "[", "&#91;")
+			code = strings.ReplaceAll(code, "]", "&#93;")
+
+			ctx.SendGroupForwardMessage(ctx.Event.GroupID, message.Message{
+				message.CustomNode(ctx.Event.Sender.NickName, ctx.Event.UserID, "[CQ:image,file="+img+"]"),
+				message.CustomNode(ctx.Event.Sender.NickName, ctx.Event.UserID, "[CQ:json,data="+code+"]"),
+			})
+		}
+	})
+
 }
 
-func sfTrack()  {
-	var info core.NovelInfo
-	var ctx *zero.Ctx
-	var groupId int64
-	var xmlText,jsonText,cmtText,record string
-	config := core.LoadConfig()
+func sfacgTrack() {
+	var bot *zero.Ctx
+	var novel core.Novel
+	var config = core.LoadConfig()
+	var content = strings.Join([]string{
+		"======================[Sfacg-Track]======================",
+		"* OneBot + ZeroBot + Golang",
+		fmt.Sprintf("* And there are %d Novels", len(config)),
+		"=========================================================",
+	}, "\n")
 
-	zero.RangeBot(func(id int64, bot *zero.Ctx) bool {
-		ctx = bot
-		fmt.Println("\n===================================================================")
-		fmt.Println("* Version 1.1.0 - 2021-08-08 09:10:29 +0800 CST")
-		fmt.Println("* Project: https://github.com/DawnNights/sfacgTrack")
-		fmt.Println("* Config: Read",len(config),"novels with local configuration")
-		fmt.Println("===================================================================\n")
+	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
+		bot = ctx
+		fmt.Println(content)
 		return false
 	})
 
-	for {for idx, _ := range config {
-		if sf.FindChapterUrl(config[idx].BookId) != config[idx].RecordUrl{
-			info.Init(config[idx].BookId)
-			config[idx].RecordUrl = info.NewChapter.Url
-			xmlText = info.MakeXmlCord()
-			jsonText, cmtText = info.MakeJsonCord()
-			record = fmt.Sprintf(
-				"小说书名: %s\n%s最新章节: %s\n评论状态: ",
-				info.Name,cmtText[0:strings.Index(cmtText,"本章评分")],info.NewChapter.Title)
+	var img, cmt, code string
+	for {
+		for idx := 0; idx < len(config); idx++ {
+			if config[idx].RecordUrl == api.FindChapterUrl(config[idx].BookId) {
+				continue
+			}
 
+			novel.Init(config[idx].BookId)
+			config[idx].RecordUrl = novel.NewChapter.Url
 
-			for _, groupId = range config[idx].GroupId{
-				if IsNormal {
-					ctx.SendGroupMessage(groupId,xmlText)
-					ctx.SendGroupMessage(groupId,jsonText)
-				}else {
-					var msg message.Message = []message.MessageSegment{
-						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, "小说更新啦~"),
-						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, xmlText),
-						message.CustomNode(info.NewChapter.Writer, config[idx].WriterId, jsonText),
-					}
-					ctx.SendGroupForwardMessage(groupId, msg)
-					ctx.SendGroupMessage(groupId,fmt.Sprintf("小说《%s》更新啦，请注意查收~",info.Name))
+			img = "file:///" + novel.MakeImage()
+			code, cmt = novel.MakeJson()
+			code = strings.ReplaceAll(code, ",", "&#44;")
+			code = strings.ReplaceAll(code, "[", "&#91;")
+			code = strings.ReplaceAll(code, "]", "&#93;")
+
+			switch mode {
+			case 0:
+
+				for _, groupID := range config[idx].GroupID {
+					bot.SendGroupMessage(groupID, "[CQ:image,file="+img+"]")
+					bot.SendGroupMessage(groupID, "[CQ:json,data="+code+"]")
 				}
+
+			case 1:
+
+				msg := message.Message{
+					message.CustomNode(novel.Writer, config[idx].UserID, "[CQ:image,file="+img+"]"),
+					message.CustomNode(novel.Writer, config[idx].UserID, "[CQ:json,data="+code+"]"),
+					message.CustomNode(novel.Writer, config[idx].UserID, "积极作者，在线更新~"),
+				}
+
+				for _, groupID := range config[idx].GroupID {
+					bot.SendGroupForwardMessage(groupID, msg)
+				}
+
 			}
 
 			if config[idx].IsSend {
-				record = record + sf.Comment(config[idx].BookId,cmtText)
-			}else {
-				record = record + "禁止评论"
+				api.SendComment(novel.Id, cmt)
 			}
-
-			ctx.SendGroupMessage(522245324,record)
 		}
-	}}
+		time.Sleep(5 * time.Second)
+	}
+
 }

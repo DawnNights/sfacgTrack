@@ -1,16 +1,17 @@
 package main
+
 import (
 	_ "sfacg/bot"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/driver"
 )
-
 
 func main() {
 	zero.Run(zero.Config{
 		NickName:      []string{"报更姬"},
 		CommandPrefix: "",
-		SuperUsers: []string{"2224825532", "1990899322"},
+		SuperUsers:    []string{"2224825532"},
 
 		Driver: []zero.Driver{
 			&driver.WSClient{
